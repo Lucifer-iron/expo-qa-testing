@@ -1,0 +1,162 @@
+name: QA Pipeline
+
+on:
+    push:
+        branches: [main, develop]
+    pull_request:
+        branches: [main, develop]
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    # ─── Phase 1: TestID Enforcement ──────────────────────────────────────────
+    enforce-testids:
+        name: "Phase 1 — Enforce testIDs"
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: "npm"
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Run testID enforcer
+              run: node antigravity-skills/skills/expo-qa-testing/scripts/enforce-testids.js --app-dir app/
+              # Exits 1 if any interactive element is missing testID → blocks merge
+
+    # ─── Phase 3: Component Tests (RNTL) ──────────────────────────────────────
+    rntl-tests:
+        name: "Phase 3 — RNTL Component Tests"
+        runs-on: ubuntu-latest
+        needs: enforce-testids
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: "npm"
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Install RNTL
+              run: npm install -D @testing-library/react-native jest-expo
+
+            - name: Run component tests
+              run: npx jest --config antigravity-skills/skills/expo-qa-testing/tests/component/jest.config.js --coverage
+
+            - name: Upload coverage
+              uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: coverage-report
+                  path: coverage/
+
+    # ─── Phase 4: E2E with Maestro ────────────────────────────────────────────
+    maestro-e2e:
+        name: "Phase 4 — Maestro E2E"
+        runs-on: ubuntu-latest
+        needs: rntl-tests
+        # Only run E2E on PRs to main, not on every push
+        if: github.event_name == 'pull_request'
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: "npm"
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Install Maestro
+              run: |
+                  curl -Ls "https://get.maestro.mobile.dev" | bash
+                  echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
+            - name: Setup Android Emulator
+              uses: reactivecircus/android-emulator-runner@v2
+              with:
+                  api-level: 33
+                  arch: x86_64
+                  profile: Nexus 6
+                  emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+                  disable-animations: true
+                  script: |
+                      # Start Expo dev server in background
+                      npx expo start --android --no-dev &
+                      sleep 30
+
+                      # Run smoke tests (non-destructive only)
+                      maestro test \
+                        antigravity-skills/skills/expo-qa-testing/tests/e2e/tab-navigation.yaml \
+                        antigravity-skills/skills/expo-qa-testing/tests/e2e/navigation-crawl.yaml \
+                        --format junit \
+                        --output tests/e2e/results/
+
+            - name: Upload E2E results
+              uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: maestro-results
+                  path: |
+                      tests/e2e/results/
+                      tests/e2e/screenshots/
+
+            - name: Upload screenshots
+              uses: actions/upload-artifact@v4
+              if: failure()
+              with:
+                  name: failure-screenshots
+                  path: tests/e2e/screenshots/
+
+    # ─── Maestro Cloud (Alternative to local emulator) ───────────────────────
+    # Uncomment this job and add MAESTRO_CLOUD_KEY secret for cloud-based runs:
+    #
+    # maestro-cloud:
+    #   name: "Phase 4 — Maestro Cloud"
+    #   runs-on: ubuntu-latest
+    #   needs: rntl-tests
+    #   if: github.event_name == 'pull_request'
+    #   steps:
+    #     - uses: actions/checkout@v4
+    #     - name: Build Expo APK
+    #       run: npx expo build:android --type apk
+    #     - uses: mobile-dev-inc/action-maestro-cloud@v1
+    #       with:
+    #         api-key: ${{ secrets.MAESTRO_CLOUD_KEY }}
+    #         app-file: app-release.apk
+    #         flow-file: antigravity-skills/skills/expo-qa-testing/tests/e2e/
+
+    # ─── Phase 5: Reporting ────────────────────────────────────────────────────
+    report:
+        name: "Phase 5 — QA Report"
+        runs-on: ubuntu-latest
+        needs: [enforce-testids, rntl-tests, maestro-e2e]
+        if: always()
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Download all artifacts
+              uses: actions/download-artifact@v4
+
+            - name: Generate QA Summary
+              run: |
+                  echo "## QA Pipeline Results" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "| Phase | Status |" >> $GITHUB_STEP_SUMMARY
+                  echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+                  echo "| Phase 1: testID Enforcement | ${{ needs.enforce-testids.result }} |" >> $GITHUB_STEP_SUMMARY
+                  echo "| Phase 3: RNTL Component Tests | ${{ needs.rntl-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+                  echo "| Phase 4: Maestro E2E | ${{ needs.maestro-e2e.result }} |" >> $GITHUB_STEP_SUMMARY

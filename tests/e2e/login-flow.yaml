@@ -1,0 +1,39 @@
+appId: com.yourapp.dev
+---
+# Login / Auth Flow
+# Verifies the authentication screen renders and submit button works
+# tags: [smoke, auth, P0]
+
+- launchApp
+- waitForAnimationToEnd
+
+# Auth screen must be visible
+- assertVisible:
+    id: "auth.email-input"
+- assertVisible:
+    id: "auth.password-input"
+- assertVisible:
+    id: "auth.submit-btn"
+- takeScreenshot: "auth-screen-initial"
+
+# Enter credentials
+- tapOn:
+    id: "auth.email-input"
+- inputText: "test@example.com"
+- tapOn:
+    id: "auth.password-input"
+- inputText: "password123"
+- hideKeyboard
+
+- takeScreenshot: "auth-screen-filled"
+
+# Submit
+- tapOn:
+    id: "auth.submit-btn"
+    retryTapIfNoChange: 3
+- waitForAnimationToEnd
+
+# Should land on home screen
+- assertNotVisible: "Invalid credentials"
+- assertNotVisible: "Error"
+- takeScreenshot: "auth-post-login"

@@ -1,0 +1,47 @@
+appId: com.yourapp.dev
+---
+# Profile Edit Flow
+# Covers: Me tab → Edit Profile → Save → Back to Me
+# tags: [profile, P1]
+
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Me tab
+- tapOn:
+    id: "me-tab"
+- assertVisible:
+    id: "me.edit-btn"
+- takeScreenshot: "me-tab-before-edit"
+
+# Open Edit Profile
+- tapOn:
+    id: "me.edit-btn"
+    retryTapIfNoChange: 2
+- waitForAnimationToEnd
+- assertVisible:
+    id: "profile-edit.name-input"
+- assertVisible:
+    id: "profile-edit.save-btn"
+- assertVisible:
+    id: "profile-edit.cancel-btn"
+- takeScreenshot: "profile-edit-screen"
+
+# Modify the name field
+- tapOn:
+    id: "profile-edit.name-input"
+- clearText
+- inputText: "Test User Name"
+- hideKeyboard
+- takeScreenshot: "profile-edit-filled"
+
+# Save changes
+- tapOn:
+    id: "profile-edit.save-btn"
+    retryTapIfNoChange: 2
+- waitForAnimationToEnd
+
+# Verify we navigated back (save successful)
+- assertNotVisible: "profile-edit.save-btn"
+- assertNotVisible: "Error"
+- takeScreenshot: "profile-after-save"

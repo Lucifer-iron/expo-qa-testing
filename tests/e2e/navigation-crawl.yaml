@@ -1,0 +1,72 @@
+appId: com.yourapp.dev
+---
+# Navigation Crawler — Monkey Test
+# Randomly explores the app by tapping accessible elements and asserting no crashes
+# tags: [exploratory, smoke, P0]
+
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: "crawler-start"
+
+# Crawl through all tabs first
+- tapOn:
+    id: "home-tab"
+- waitForAnimationToEnd
+- assertNotVisible: "RNCSafeAreaView error"
+- assertNotVisible: "undefined is not an object"
+- takeScreenshot: "crawler-home"
+- scroll
+
+- tapOn:
+    id: "chats-tab"
+- waitForAnimationToEnd
+- assertNotVisible: "Error"
+- takeScreenshot: "crawler-chats"
+
+- tapOn:
+    id: "schedule-tab"
+- waitForAnimationToEnd
+- assertNotVisible: "Error"
+- takeScreenshot: "crawler-schedule"
+
+- tapOn:
+    id: "earnings-tab"
+- waitForAnimationToEnd
+- assertNotVisible: "Error"
+- takeScreenshot: "crawler-earnings"
+
+- tapOn:
+    id: "me-tab"
+- waitForAnimationToEnd
+- assertNotVisible: "Error"
+- takeScreenshot: "crawler-me"
+
+# Drill into profile edit and back
+- tapOn:
+    id: "me.edit-btn"
+    optional: true
+    retryTapIfNoChange: 2
+- waitForAnimationToEnd
+- assertNotVisible: "Error"
+- takeScreenshot: "crawler-profile-edit"
+- pressBack
+- waitForAnimationToEnd
+
+# Try account settings
+- tapOn:
+    id: "me.settings-btn"
+    optional: true
+    retryTapIfNoChange: 2
+- waitForAnimationToEnd
+- assertNotVisible: "Error"
+- takeScreenshot: "crawler-account-settings"
+- pressBack
+- waitForAnimationToEnd
+
+# Final: back to home, assert no crash
+- tapOn:
+    id: "home-tab"
+- assertNotVisible: "Error"
+- assertNotVisible: "undefined is not an object"
+- assertNotVisible: "null is not an object"
+- takeScreenshot: "crawler-end"

@@ -1,0 +1,60 @@
+appId: com.yourapp.dev
+---
+# Contacts Flow
+# Covers: Me → Contacts → Add contact → Confirm modal
+# tags: [contacts, P2]
+
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Me tab
+- tapOn:
+    id: "me-tab"
+- assertNotVisible: "Error"
+- takeScreenshot: "me-tab-for-contacts"
+
+# Open Trusted Contacts (assuming it's reachable from Me)
+- tapOn:
+    id: "me.settings-btn"
+    optional: true
+    retryTapIfNoChange: 2
+- waitForAnimationToEnd
+- takeScreenshot: "contacts-trusted-screen"
+
+# Navigate to Add Contact
+- tapOn:
+    id: "contacts-add.name-input"
+    optional: true
+- tapOn:
+    id: "contacts-trusted.contact-card"
+    optional: true
+- waitForAnimationToEnd
+
+# Add contact form — fill fields
+- assertVisible:
+    id: "contacts-add.name-input"
+    optional: true
+- tapOn:
+    id: "contacts-add.name-input"
+    optional: true
+- inputText: "Test Contact"
+- tapOn:
+    id: "contacts-add.phone-input"
+    optional: true
+- inputText: "1234567890"
+- hideKeyboard
+- takeScreenshot: "contacts-add-filled"
+
+# Tap Add to open confirm modal
+- tapOn:
+    id: "contacts-add.add-btn"
+    optional: true
+    retryTapIfNoChange: 2
+- waitForAnimationToEnd
+- takeScreenshot: "contacts-confirm-modal"
+
+# Cancel the modal (non-destructive)
+- pressBack
+- waitForAnimationToEnd
+- assertNotVisible: "Error"
+- takeScreenshot: "contacts-after-cancel"

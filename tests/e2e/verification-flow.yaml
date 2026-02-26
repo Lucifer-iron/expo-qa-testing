@@ -1,0 +1,48 @@
+appId: com.yourapp.dev
+---
+# KYC Verification Flow
+# Covers: Me → Verify → Upload ID → Face Scan → Verify Success
+# tags: [verification, kyc, P2]
+
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Me tab
+- tapOn:
+    id: "me-tab"
+- assertVisible:
+    id: "me.verify-btn"
+- takeScreenshot: "me-tab-for-verify"
+
+# Start verification
+- tapOn:
+    id: "me.verify-btn"
+    retryTapIfNoChange: 2
+- waitForAnimationToEnd
+- assertVisible:
+    id: "verify.start-btn"
+- takeScreenshot: "verify-screen"
+
+# Begin KYC
+- tapOn:
+    id: "verify.start-btn"
+    retryTapIfNoChange: 2
+- waitForAnimationToEnd
+
+# Upload ID screen
+- assertVisible:
+    id: "upload-id.upload-btn"
+- takeScreenshot: "upload-id-screen"
+# NOTE: Actual file upload is tested with mocked image picker
+# tapOn upload-id.upload-btn would trigger native picker (skip in CI)
+
+# Navigate forward manually via back/next if no upload
+- assertNotVisible: "Error"
+- pressBack
+- waitForAnimationToEnd
+
+# Back to verify start
+- assertVisible:
+    id: "verify.start-btn"
+- assertNotVisible: "Error"
+- takeScreenshot: "verify-screen-after-back"

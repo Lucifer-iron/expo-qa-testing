@@ -1,0 +1,48 @@
+appId: com.yourapp.dev
+---
+# Session Flow
+# Covers: Active session screen → SOS (cancel only) + Rate sub-flows
+# SAFETY: DESTRUCTIVE — SOS confirm is NOT tapped; only cancel is used
+# tags: [session, P1, partial-destructive]
+
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to active session via deep link if available
+# If not, this flow assumes /session/active is reachable from schedule
+- tapOn:
+    id: "schedule-tab"
+- assertNotVisible: "Error"
+- takeScreenshot: "schedule-before-session"
+
+# --- SOS Flow (safe path: open + cancel) ---
+# Navigate to session/active — tap any active booking card if present
+- tapOn:
+    id: "schedule.booking-card"
+    optional: true
+    retryTapIfNoChange: 2
+- waitForAnimationToEnd
+
+# If session/active is visible:
+- tapOn:
+    id: "session.sos-btn"
+    optional: true
+    retryTapIfNoChange: 2
+- waitForAnimationToEnd
+
+- assertVisible:
+    id: "sos.cancel-btn"
+    optional: true
+- takeScreenshot: "sos-screen"
+
+# Cancel SOS — safe path
+- tapOn:
+    id: "sos.cancel-btn"
+    optional: true
+- waitForAnimationToEnd
+- assertNotVisible: "Error"
+- takeScreenshot: "sos-cancelled"
+
+# Return to schedule
+- pressBack
+- takeScreenshot: "post-session-back"

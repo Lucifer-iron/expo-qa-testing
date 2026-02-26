@@ -1,0 +1,53 @@
+appId: com.yourapp.dev
+---
+# Tab Navigation Flow
+# Verifies all 5 tabs load and render without crashes
+# tags: [smoke, navigation, P0]
+
+- launchApp
+- assertVisible:
+    enabled: true
+
+# Home tab (default)
+- assertVisible:
+    id: "home.profile-card"
+- takeScreenshot: "home-tab"
+
+# Chats tab
+- tapOn:
+    id: "chats-tab"
+    retryTapIfNoChange: 2
+- assertVisible:
+    id: "chats.conversation-card"
+    optional: true # ok if empty state shows
+- assertNotVisible: "Error"
+- takeScreenshot: "chats-tab"
+
+# Schedule tab
+- tapOn:
+    id: "schedule-tab"
+    retryTapIfNoChange: 2
+- assertNotVisible: "Error"
+- takeScreenshot: "schedule-tab"
+
+# Earnings tab
+- tapOn:
+    id: "earnings-tab"
+    retryTapIfNoChange: 2
+- assertNotVisible: "Error"
+- takeScreenshot: "earnings-tab"
+
+# Me tab
+- tapOn:
+    id: "me-tab"
+    retryTapIfNoChange: 2
+- assertVisible:
+    id: "me.edit-btn"
+- assertNotVisible: "Error"
+- takeScreenshot: "me-tab"
+
+# Cycle back to Home
+- tapOn:
+    id: "home-tab"
+- assertNotVisible: "Error"
+- takeScreenshot: "home-tab-return"
